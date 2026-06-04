@@ -27,7 +27,7 @@ export interface Store {
 }
 
 export function createStore(N: number, t: Transforms): Store {
-  let spatial = new Float32Array(N * N);
+  let spatial: Float32Array = new Float32Array(N * N);
   let spectrum: Spectrum = t.forward(spatial, N);
   let last: Domain | null = null;
   const listeners = new Set<() => void>();
