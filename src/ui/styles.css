@@ -1,0 +1,9 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+.toolbar { display: flex; gap: 12px; align-items: center; padding: 8px 12px; background: #2a2a2a; flex-wrap: wrap; }
+.toolbar label { display: flex; gap: 4px; align-items: center; font-size: 13px; }
+.panels { display: flex; flex: 1; gap: 12px; padding: 12px; min-height: 0; }
+.panel { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.panel h2 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+.panel canvas { width: 100%; height: auto; image-rendering: pixelated; background: #000; border: 1px solid #444; touch-action: none; }
