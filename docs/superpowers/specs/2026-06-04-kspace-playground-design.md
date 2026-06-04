@@ -37,7 +37,7 @@ static files to GitHub Pages (or similar) for free.
 | Color | Grayscale only | One FFT, one spectrum, one phase channel. Color images convert to luminance on import. |
 | Phase display | One k-space panel: brightness = log-magnitude, hue = phase | Compact, matches MRI k-space convention. |
 | Phase colormap | **Configurable** (cyclic hue wheel default; red/blue diverging; extensible) | User-requested; lets the wrap behavior itself be a teaching moment. |
-| Performance | Moderate size (256 default, 512 option), **CPU FFT in a Web Worker** | Far simpler than GPU; live enough at these sizes. |
+| Performance | Moderate size (512 default, 256 option), **CPU FFT in a Web Worker** | Far simpler than GPU; live enough at these sizes. |
 | Stack | Vanilla TypeScript + Canvas2D + Web Worker, built with Vite | No UI framework — drawing is imperative canvas work anyway. Smallest, fastest, static-deployable. |
 | Hand-painted k-space → image | **Take the real part of the IFFT** | Simpler than enforcing conjugate symmetry. See §7. |
 | State model | Two canonical float buffers; one transform per edit | Avoids continuous round-trip drift. See §3. |
@@ -107,7 +107,7 @@ worker off the main thread.
 
 ## 5. k-space representation details
 
-- Working resolution is a **power of two** (default **256**, switchable to **512**)
+- Working resolution is a **power of two** (default **512**, switchable to **256**)
   — required by the FFT and keeps behavior predictable.
 - **fftshift** places DC at the center.
 - **log-magnitude** (`log(1+m)`, normalized to the current max) so the huge DC
