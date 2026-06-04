@@ -83,18 +83,7 @@ export function attachInteraction(
     }
   });
 
-  canvas.addEventListener("pointermove", (e) => {
-    if (!drawing) return;
-    const p = toBufferCoords(canvas, N, e);
-    if (controls.tool === "brush" || controls.tool === "eraser") {
-      // Stamp along the movement for continuous strokes.
-      queueEdit(lineCoverage(N, lastX, lastY, p.x, p.y, controls.size));
-    }
-    lastX = p.x;
-    lastY = p.y;
-  });
-
-  canvas.addEventListener("pointerup", (e) => {
+  function endStroke(e: PointerEvent) {
     if (!drawing) return;
     drawing = false;
     const p = toBufferCoords(canvas, N, e);
@@ -106,7 +95,30 @@ export function attachInteraction(
       cov = circleCoverage(N, startX, startY, r, controls.size);
     }
     if (cov) applyEdit(store, domain, controls, cov);
+  }
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    // If the primary button is no longer held (released outside the canvas/window
+    // and the pointer re-entered), end the stroke instead of continuing it.
+    if (e.buttons === 0) {
+      endStroke(e);
+      return;
+    }
+    const p = toBufferCoords(canvas, N, e);
+    if (controls.tool === "brush" || controls.tool === "eraser") {
+      // Stamp along the movement for continuous strokes.
+      queueEdit(lineCoverage(N, lastX, lastY, p.x, p.y, controls.size));
+    }
+    lastX = p.x;
+    lastY = p.y;
   });
+
+  // End the stroke on release ANYWHERE. Listening on the canvas alone misses the
+  // pointerup when the button is released outside it, leaving the stroke "stuck";
+  // window-level listeners catch the release wherever it occurs.
+  window.addEventListener("pointerup", endStroke);
+  window.addEventListener("pointercancel", endStroke);
 }
 
 /** Load an image file, resize to N×N luminance, return a Float32Array(0..1). */
