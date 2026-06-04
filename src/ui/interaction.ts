@@ -7,8 +7,20 @@ import {
   rectCoverage,
   circleCoverage,
 } from "../engine/stroke";
+import { fftshift } from "../engine/render";
 
 type Domain = "spatial" | "kspace";
+
+/**
+ * The k-space canvas is displayed fftshift'd (DC centered), but the spectrum
+ * buffer is in FFT-natural order (DC at index 0). A brush built in display
+ * coordinates must be mapped back to buffer coordinates before editing the
+ * spectrum, otherwise edits land in the diagonally-opposite quadrant. For the
+ * power-of-two (even) N used here, fftshift is its own inverse, so we reuse it.
+ */
+export function displayCoverageToBuffer(cov: Float32Array, N: number): Float32Array {
+  return fftshift(cov, N);
+}
 
 /** Map a pointer event to integer buffer coordinates for an N×N canvas. */
 function toBufferCoords(canvas: HTMLCanvasElement, N: number, e: PointerEvent) {
@@ -24,7 +36,7 @@ function applyEdit(store: Store, domain: Domain, c: ToolControls, cov: Float32Ar
     store.editSpatial(cov, value);
   } else {
     const mag = c.tool === "eraser" ? 0 : c.magnitude;
-    store.editKspace(cov, mag, c.phase);
+    store.editKspace(displayCoverageToBuffer(cov, store.N), mag, c.phase);
   }
 }
 
