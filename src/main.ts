@@ -5,6 +5,7 @@ import { createStore } from "./engine/state";
 import { fft2dForward, fft2dInverse } from "./engine/fft2d";
 import { renderSpatial, renderKspace } from "./engine/render";
 import { phaseColormaps } from "./engine/mapping";
+import { attachInteraction, fileToLuminance } from "./ui/interaction";
 
 const N = 512;
 const root = document.querySelector<HTMLDivElement>("#app")!;
@@ -30,3 +31,41 @@ paint();
 
 // Expose for Task 10 wiring/manual debugging.
 (window as any).__kspace = { store, ui, paint, N };
+
+attachInteraction(ui.spatialCanvas, "spatial", store, ui.controls);
+attachInteraction(ui.kspaceCanvas, "kspace", store, ui.controls);
+
+function $(id: string) {
+  return root.querySelector<HTMLElement>(`#${id}`)!;
+}
+
+// Import to spatial: load luminance and set it.
+$("import-spatial").addEventListener("change", async (e) => {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  store.setSpatial(await fileToLuminance(file, N));
+});
+
+// Import to k-space (v1): treat luminance as log-magnitude, zero phase.
+$("import-kspace").addEventListener("change", async (e) => {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const lum = await fileToLuminance(file, N);
+  const re = new Float32Array(N * N);
+  const im = new Float32Array(N * N);
+  for (let i = 0; i < N * N; i++) {
+    // Invert the log-magnitude display mapping: magnitude = exp(scaledLum) - 1.
+    re[i] = Math.exp(lum[i] * 8) - 1; // phase 0 -> all real
+  }
+  store.setSpectrum({ re, im });
+});
+
+function downloadCanvas(canvas: HTMLCanvasElement, name: string) {
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = name;
+  a.click();
+}
+
+$("export-spatial").addEventListener("click", () => downloadCanvas(ui.spatialCanvas, "image.png"));
+$("export-kspace").addEventListener("click", () => downloadCanvas(ui.kspaceCanvas, "kspace.png"));
