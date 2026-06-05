@@ -6,6 +6,8 @@ import { fft2dForward, fft2dInverse } from "./engine/fft2d";
 import { renderSpatial, renderKspace } from "./engine/render";
 import { phaseColormaps } from "./engine/mapping";
 import { attachInteraction, fileToLuminance } from "./ui/interaction";
+import { examples } from "./engine/examples";
+import type { Spectrum } from "./engine/fft2d";
 
 const N = 512;
 const root = document.querySelector<HTMLDivElement>("#app")!;
@@ -69,3 +71,25 @@ function downloadCanvas(canvas: HTMLCanvasElement, name: string) {
 
 $("export-spatial").addEventListener("click", () => downloadCanvas(ui.spatialCanvas, "image.png"));
 $("export-kspace").addEventListener("click", () => downloadCanvas(ui.kspaceCanvas, "kspace.png"));
+
+function setCaption(text: string) {
+  $("caption").textContent = text;
+}
+
+$("examples").addEventListener("change", (e) => {
+  const select = e.target as HTMLSelectElement;
+  if (select.value === "") return;
+  const ex = examples[Number(select.value)];
+  const data = ex.generate(N);
+  if (ex.domain === "spatial") store.setSpatial(data as Float32Array);
+  else store.setSpectrum(data as Spectrum);
+  setCaption(ex.caption);
+  // Reset to the placeholder so the same example can be re-selected and the
+  // dropdown never misrepresents state after manual edits.
+  select.value = "";
+});
+
+$("clear").addEventListener("click", () => {
+  store.setSpatial(new Float32Array(N * N));
+  setCaption("");
+});

@@ -1,5 +1,6 @@
 // src/ui/dom.ts
 import { phaseColormaps } from "../engine/mapping";
+import { examples } from "../engine/examples";
 
 export interface ToolControls {
   tool: "brush" | "eraser" | "line" | "rect" | "circle";
@@ -31,6 +32,12 @@ export function buildUI(root: HTMLElement, N: number): UI {
 
   root.innerHTML = `
     <div class="toolbar">
+      <label>Examples
+        <select id="examples">
+          <option value="">Examples…</option>
+          ${examples.map((e, i) => `<option value="${i}">${e.name}</option>`).join("")}
+        </select>
+      </label>
       <label>Tool
         <select id="tool">
           <option value="brush">Brush</option>
@@ -54,11 +61,13 @@ export function buildUI(root: HTMLElement, N: number): UI {
       <label>Import k-space <input id="import-kspace" type="file" accept="image/*"></label>
       <button id="export-spatial">Export image</button>
       <button id="export-kspace">Export k-space</button>
+      <button id="clear">Clear</button>
     </div>
     <div class="panels">
       <div class="panel"><h2>Spatial (image)</h2><canvas id="spatial" width="${N}" height="${N}"></canvas></div>
       <div class="panel"><h2>k-space (FFT)</h2><canvas id="kspace" width="${N}" height="${N}"></canvas></div>
     </div>
+    <div class="caption" id="caption"></div>
   `;
 
   const $ = <T extends HTMLElement>(id: string) => root.querySelector<T>(`#${id}`)!;

@@ -7,3 +7,4 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #1e1e1e; color
 .panel { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .panel h2 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
 .panel canvas { width: 100%; height: auto; image-rendering: pixelated; background: #000; border: 1px solid #444; touch-action: none; }
+.caption { padding: 6px 12px; font-size: 13px; color: #aaa; min-height: 20px; }
