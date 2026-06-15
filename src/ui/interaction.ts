@@ -7,8 +7,20 @@ import {
   rectCoverage,
   circleCoverage,
 } from "../engine/stroke";
+import { fftshift } from "../engine/render";
 
 type Domain = "spatial" | "kspace";
+
+/**
+ * The k-space canvas is displayed fftshift'd (DC centered), but the spectrum
+ * buffer is in FFT-natural order (DC at index 0). A brush built in display
+ * coordinates must be mapped back to buffer coordinates before editing the
+ * spectrum, otherwise edits land in the diagonally-opposite quadrant. For the
+ * power-of-two (even) N used here, fftshift is its own inverse, so we reuse it.
+ */
+export function displayCoverageToBuffer(cov: Float32Array, N: number): Float32Array {
+  return fftshift(cov, N);
+}
 
 /** Map a pointer event to integer buffer coordinates for an N×N canvas. */
 function toBufferCoords(canvas: HTMLCanvasElement, N: number, e: PointerEvent) {
@@ -24,7 +36,7 @@ function applyEdit(store: Store, domain: Domain, c: ToolControls, cov: Float32Ar
     store.editSpatial(cov, value);
   } else {
     const mag = c.tool === "eraser" ? 0 : c.magnitude;
-    store.editKspace(cov, mag, c.phase);
+    store.editKspace(displayCoverageToBuffer(cov, store.N), mag, c.phase);
   }
 }
 
@@ -71,18 +83,7 @@ export function attachInteraction(
     }
   });
 
-  canvas.addEventListener("pointermove", (e) => {
-    if (!drawing) return;
-    const p = toBufferCoords(canvas, N, e);
-    if (controls.tool === "brush" || controls.tool === "eraser") {
-      // Stamp along the movement for continuous strokes.
-      queueEdit(lineCoverage(N, lastX, lastY, p.x, p.y, controls.size));
-    }
-    lastX = p.x;
-    lastY = p.y;
-  });
-
-  canvas.addEventListener("pointerup", (e) => {
+  function endStroke(e: PointerEvent) {
     if (!drawing) return;
     drawing = false;
     const p = toBufferCoords(canvas, N, e);
@@ -94,7 +95,30 @@ export function attachInteraction(
       cov = circleCoverage(N, startX, startY, r, controls.size);
     }
     if (cov) applyEdit(store, domain, controls, cov);
+  }
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    // If the primary button is no longer held (released outside the canvas/window
+    // and the pointer re-entered), end the stroke instead of continuing it.
+    if (e.buttons === 0) {
+      endStroke(e);
+      return;
+    }
+    const p = toBufferCoords(canvas, N, e);
+    if (controls.tool === "brush" || controls.tool === "eraser") {
+      // Stamp along the movement for continuous strokes.
+      queueEdit(lineCoverage(N, lastX, lastY, p.x, p.y, controls.size));
+    }
+    lastX = p.x;
+    lastY = p.y;
   });
+
+  // End the stroke on release ANYWHERE. Listening on the canvas alone misses the
+  // pointerup when the button is released outside it, leaving the stroke "stuck";
+  // window-level listeners catch the release wherever it occurs.
+  window.addEventListener("pointerup", endStroke);
+  window.addEventListener("pointercancel", endStroke);
 }
 
 /** Load an image file, resize to N×N luminance, return a Float32Array(0..1). */
